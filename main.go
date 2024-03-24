@@ -31,7 +31,7 @@ type RateLimit struct {
 }
 
 // New created a new plugin.
-func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
+func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	mlog(fmt.Sprintf("config %v", config))
 	return &RateLimit{
 		name:                  name,
