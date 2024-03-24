@@ -5,7 +5,7 @@ displayName: Rate Limit
 type: middleware
 
 # The import path of your plugin.
-import: github.com/kav789/traefic-ratelimit
+import: github.com/kav789/traefik-ratelimit
 
 # A brief description of what your plugin is doing.
 summary: Rate Limit
