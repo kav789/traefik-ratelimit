@@ -8,18 +8,13 @@ import (
 	"os"
 )
 
-const xRequestIDHeader = "X-Request-Id"
-
-
 func CreateConfig() *Config {
 	return &Config{
 	}
 }
 
 type Config struct {
-	MaxRequestInWindow int    `json:"maxRequestInWindow,omitempty"`
-	WindowTime         int    `json:"windowTime,omitempty"`
-	Env                string `json:"env,omitempty"`
+	Rate int `json:"rate,omitempty"`
 }
 
 
@@ -47,11 +42,8 @@ func (r *RateLimit) Allow(ctx context.Context, req *http.Request, rw http.Respon
 
 func (r *RateLimit) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	encoder := json.NewEncoder(rw)
-	requestID := req.Header.Get(xRequestIDHeader)
 
 	reqCtx := req.Context()
-	reqCtx = context.WithValue(reqCtx, "requestID", requestID)
-//	reqCtx = context.WithValue(reqCtx, "env", r.config.Env)
 
 	if r.Allow(reqCtx, req, rw) {
 		r.next.ServeHTTP(rw, req)
