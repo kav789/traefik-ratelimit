@@ -44,8 +44,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./plugins-local/src/github.com/kav/traefik-ratelimit:/plugins-local/src/github.com/kav789/traefik-ratelimit
     labels:
-      - traefik.http.middlewares.rate-limit.plugin.ratelimit.windowTime=100
-      - traefik.http.middlewares.rate-limit.plugin.ratelimit.maxRequestInWindow=10
+      - traefik.http.middlewares.rate-limit.plugin.rate=100
   whoami:
     image: traefik/whoami
     container_name: simple-service

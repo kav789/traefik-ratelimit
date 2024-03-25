@@ -1,4 +1,4 @@
-package traefik_ratelimit
+package ratelimit
 
 import (
 	"context"
@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"golang.org/x/time/rate"
 )
 
 // config struct
 type Config struct {
-	Rate int `json:"rate,omitempty"`
+	Rate  rate.Limit `json:"rate,omitempty"`
 }
 
 // default config
@@ -23,7 +24,7 @@ type RateLimit struct {
 	name   string
 	next   http.Handler
 	config *Config
-	rate   int
+	limiter *rate.Limiter
 }
 
 // New plugin
@@ -33,12 +34,12 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		name:   name,
 		next:   next,
 		config: config,
-		rate:   config.Rate,
+		limiter: rate.NewLimiter(config.Rate, 1),
 	}, nil
 }
 
 func (r *RateLimit) allow(ctx context.Context, req *http.Request, rw http.ResponseWriter) bool {
-	return true
+	return r.limiter.Allow()
 }
 
 // serve method
