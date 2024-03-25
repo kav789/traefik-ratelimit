@@ -1,4 +1,4 @@
-package traefikratelimit
+package traefik_ratelimit
 
 import (
 	"context"
@@ -8,14 +8,14 @@ import (
 	"os"
 )
 
-// default config
-func CreateConfig() *Config {
-	return &Config{}
-}
-
 // config struct
 type Config struct {
 	Rate int `json:"rate,omitempty"`
+}
+
+// default config
+func CreateConfig() *Config {
+	return &Config{}
 }
 
 // ratelimiter struct
@@ -23,6 +23,7 @@ type RateLimit struct {
 	name   string
 	next   http.Handler
 	config *Config
+	rate   int
 }
 
 // New plugin
@@ -32,6 +33,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		name:   name,
 		next:   next,
 		config: config,
+		rate:   config.Rate,
 	}, nil
 }
 
