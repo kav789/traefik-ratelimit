@@ -11,7 +11,7 @@ import (
 
 // config struct
 type Config struct {
-	Rate  rate.Limit `json:"rate,omitempty"`
+	Rate int `json:"rate,omitempty"`
 }
 
 // default config
@@ -34,7 +34,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		name:   name,
 		next:   next,
 		config: config,
-		limiter: rate.NewLimiter(config.Rate, 1),
+		limiter: rate.NewLimiter(rate.Limit(config.Rate), 1),
 	}, nil
 }
 
