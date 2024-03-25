@@ -1,4 +1,4 @@
-package ratelimit
+package traefik_ratelimit
 
 import (
 	"context"

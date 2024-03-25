@@ -1,4 +1,4 @@
-package ratelimit_test
+package traefik_ratelimit_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kav789/traefik-ratelimit"
+	ratelimit "github.com/kav789/traefik-ratelimit"
 )
 
 func TestLimit(t *testing.T) {
