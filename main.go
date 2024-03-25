@@ -1,4 +1,4 @@
-package traefik_ratelimit
+package traefikratelimit
 
 import (
 	"context"
@@ -8,21 +8,24 @@ import (
 	"os"
 )
 
+// default config
 func CreateConfig() *Config {
 	return &Config{}
 }
 
+// config struct
 type Config struct {
 	Rate int `json:"rate,omitempty"`
 }
 
+// ratelimiter struct
 type RateLimit struct {
 	name   string
 	next   http.Handler
-	rate   int
 	config *Config
 }
 
+// New plugin
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	mlog(fmt.Sprintf("config %v", config))
 	return &RateLimit{
@@ -32,23 +35,23 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	}, nil
 }
 
-func (r *RateLimit) Allow(ctx context.Context, req *http.Request, rw http.ResponseWriter) bool {
+func (r *RateLimit) allow(ctx context.Context, req *http.Request, rw http.ResponseWriter) bool {
 	return true
 }
 
+// serve method
 func (r *RateLimit) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	encoder := json.NewEncoder(rw)
 	reqCtx := req.Context()
-	if r.Allow(reqCtx, req, rw) {
+	if r.allow(reqCtx, req, rw) {
 		r.next.ServeHTTP(rw, req)
 		return
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusTooManyRequests)
-	encoder.Encode(map[string]any{"status_code": http.StatusTooManyRequests, "message": "rate limit exceeded, try again later"})
-	return
+	_ = encoder.Encode(map[string]any{"status_code": http.StatusTooManyRequests, "message": "rate limit exceeded, try again later"})
 }
 
 func mlog(args ...any) {
-	os.Stdout.WriteString(fmt.Sprintf("[rate-limit-middleware-plugin] %s\n", fmt.Sprint(args...)))
+	_,_ = os.Stdout.WriteString(fmt.Sprintf("[rate-limit-middleware-plugin] %s\n", fmt.Sprint(args...)))
 }

@@ -8,7 +8,7 @@ type: middleware
 import: github.com/kav789/traefik-ratelimit
 
 # A brief description of what your plugin is doing.
-summary: Rate Limit
+summary: 'Rate Limit'
 
 # Medias associated to the plugin (optional)
 iconPath:  .assets/icon.png
