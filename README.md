@@ -17,47 +17,12 @@ The source code of the plugin should be organized as follows:
                     └── ...
 
 ```
+parameters:
 
-```yaml
-# docker-compose.yml
-version: "3.6"
+```
+  - keeperRateLimitKey=wbpay-ratelimits
+  - keeperURL=http://keeper-ext.wbpay.svc.k8s.wbpay-dev:8080
+  - keeperAdminPassword=Pa$sw0rd
+  - keeperReqTimeout=300s
 
-services:
-  traefik:
-    image: traefik:v2.9.6
-    container_name: traefik
-    command:
-      # - --log.level=DEBUG
-      - --log.level=INFO
-      - --api
-      - --api.dashboard
-      - --api.insecure=true
-      - --providers.docker=true
-      - --entrypoints.web.address=:80
-      - --experimental.localPlugins.ratelimit.moduleName=github.com/kav789/traefik-ratelimit
-    ports:
-      - "80:80"
-      - "8080:8080"
-    networks:
-      - traefik-network
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./plugins-local/src/github.com/kav/traefik-ratelimit:/plugins-local/src/github.com/kav789/traefik-ratelimit
-    labels:
-      - traefik.http.middlewares.rate-limit.plugin.rate=100
-  whoami:
-    image: traefik/whoami
-    container_name: simple-service
-    depends_on:
-      - traefik
-    networks:
-      - traefik-network
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.whoami.rule=Host(`localhost`)
-      - traefik.http.routers.whoami.entrypoints=web
-      - traefik.http.routers.whoami.middlewares=rate-limit
-networks:
-  traefik-network:
-    driver: bridge
 ```

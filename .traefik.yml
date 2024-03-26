@@ -8,15 +8,10 @@ type: middleware
 import: github.com/kav789/traefik-ratelimit
 
 # A brief description of what your plugin is doing.
-summary: Rate Limit by ip
+summary: Rate Limit
 
-# Medias associated to the plugin (optional)
-iconPath:  .assets/icon.png
-
-compatibility: TODO
-
-# Configuration data for your plugin.
-# This is mandatory,
-# and Plugins Catalog will try to execute the plugin with the data you provide as part of its startup validity tests.
 testData:
-  rate: 100
+  keeperRateLimitKey: wbpay-ratelimits
+  keeperURL: http://keeper-ext.wbpay.svc.k8s.wbpay-dev:8080
+  keeperAdminPassword: Pa$sw0rd
+  keeperReqTimeout: 300s

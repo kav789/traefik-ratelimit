@@ -2,11 +2,10 @@ package traefik_ratelimit_test
 
 import (
 	"context"
+	ratelimit "github.com/kav789/traefik-ratelimit"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	ratelimit "github.com/kav789/traefik-ratelimit"
 )
 
 func TestLimit(t *testing.T) {
@@ -30,16 +29,16 @@ func TestLimit(t *testing.T) {
 	handler.ServeHTTP(recorder, req)
 
 	assertResponse(t, req)
-//	assertHeader(t, req, "X-URL", "http://localhost")
-//	assertHeader(t, req, "X-Method", "GET")
-//	assertHeader(t, req, "X-Demo", "test")
-	
+	//	assertHeader(t, req, "X-URL", "http://localhost")
+	//	assertHeader(t, req, "X-Method", "GET")
+	//	assertHeader(t, req, "X-Demo", "test")
+
 }
 
 func assertResponse(t *testing.T, req *http.Request) {
 	t.Helper()
 
-//	if req.Header.Get(key) != expected {
-//		t.Errorf("invalid header value: %s", req.Header.Get(key))
-//	}
+	//	if req.Header.Get(key) != expected {
+	//		t.Errorf("invalid header value: %s", req.Header.Get(key))
+	//	}
 }
