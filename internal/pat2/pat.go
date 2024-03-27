@@ -2,7 +2,7 @@ package pat
 
 import (
 	"fmt"
-//	"slices"
+	//	"slices"
 	"strconv"
 	"strings"
 )
@@ -30,13 +30,12 @@ func slicesEqual(s1, s2 []Pat) bool {
 	return true
 }
 
-
 func Appendpat(pats [][]Pat, p []Pat) [][]Pat {
 	if p == nil {
 		return pats
 	}
 	for _, tp := range pats {
-//		if slices.Equal(tp, p) {
+		//		if slices.Equal(tp, p) {
 		if slicesEqual(tp, p) {
 			return pats
 		}

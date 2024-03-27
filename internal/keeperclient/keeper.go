@@ -1,17 +1,17 @@
 package keeperclient
 
 import (
-	"net/url"
-	"strings"
 	"bytes"
-	"errors"
-	"os"
-	"mime/multipart"
-	"net/http/cookiejar"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -19,7 +19,6 @@ type KeeperClient struct {
 	url    string
 	client *http.Client
 }
-
 
 func mpart(values map[string]io.Reader) (*bytes.Buffer, string, error) {
 	var b bytes.Buffer
@@ -48,9 +47,9 @@ func mpart(values map[string]io.Reader) (*bytes.Buffer, string, error) {
 }
 
 func New(url string, timeout time.Duration, login, password string) (*KeeperClient, error) {
-	jar, _ := cookiejar.New( nil )
-	client :=  &http.Client { 
-		Jar: jar, 
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{
+		Jar:     jar,
 		Timeout: timeout,
 	}
 	values := map[string]io.Reader{
@@ -61,7 +60,7 @@ func New(url string, timeout time.Duration, login, password string) (*KeeperClie
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("POST", url+ "/admin/login", b)
+	req, err := http.NewRequest("POST", url+"/admin/login", b)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +92,6 @@ const (
 	SUCCESS_STATUS = "Operation is success"
 )
 
-
 func (k *KeeperClient) Set(kd KeeperData) error {
 	var errs []error
 	var err error
@@ -110,14 +108,14 @@ func (k *KeeperClient) Set(kd KeeperData) error {
 }
 
 func (k *KeeperClient) action(action string, kd KeeperData) error {
-	data := url.Values {
+	data := url.Values{
 		"key":         {kd.Key},
 		"description": {kd.Description},
 		"value":       {kd.Value},
 		"template":    {kd.Template},
 		"comment":     {kd.Comment},
 	}
-	req, err := http.NewRequest("POST", k.url + "/admin/dynamic_settings/editform?action="+ action, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest("POST", k.url+"/admin/dynamic_settings/editform?action="+action, strings.NewReader(data.Encode()))
 	if err != nil {
 		return err
 	}
@@ -137,7 +135,7 @@ func (k *KeeperClient) action(action string, kd KeeperData) error {
 	type status struct {
 		Status string `json:"status"`
 	}
-	var sts status 
+	var sts status
 	err = json.Unmarshal(b, &sts)
 	if err != nil {
 		return fmt.Errorf("create keeper: invalid response, body=%s %w", b, err)

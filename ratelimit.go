@@ -80,9 +80,7 @@ func mlog(args ...any) {
 
 // New created a new plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	mlog(fmt.Sprintf("config %s %s %s", config.KeeperRateLimitKey, config.KeeperURL, config.KeeperReqTimeout ))
-
-
+	mlog(fmt.Sprintf("config %s %s %s", config.KeeperRateLimitKey, config.KeeperURL, config.KeeperReqTimeout))
 
 	if len(config.KeeperRateLimitKey) == 0 {
 		return nil, fmt.Errorf("config: keeperRateLimitKey is empty")
@@ -131,7 +129,6 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	return r, nil
 }
 
-
 func NewRateLimit(next http.Handler, config *Config, name string) *RateLimit {
 	return newRateLimit(next, config, name)
 }
@@ -168,4 +165,3 @@ func (r *RateLimit) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rw.WriteHeader(http.StatusTooManyRequests)
 	_ = encoder.Encode(map[string]any{"status_code": http.StatusTooManyRequests, "message": "rate limit exceeded, try again later"})
 }
-

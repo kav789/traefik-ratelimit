@@ -1,13 +1,13 @@
 package traefik_ratelimit_test
 
 import (
-	"fmt"
-	"os"
 	"context"
+	"fmt"
 	ratelimit "github.com/kav789/traefik-ratelimit"
 	"github.com/kav789/traefik-ratelimit/internal/keeperclient"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
@@ -20,11 +20,10 @@ type testdata struct {
 
 func TestLimit(t *testing.T) {
 
-	keeper_login    := os.Getenv("KEEPER_LOGIN")
+	keeper_login := os.Getenv("KEEPER_LOGIN")
 	keeper_password := os.Getenv("KEEPER_PAS")
-	keeper_url      := os.Getenv("KEEPER_URL")
-	keeper_key      := "ratelimiter"
-
+	keeper_url := os.Getenv("KEEPER_URL")
+	keeper_key := "ratelimiter"
 
 	cases := []struct {
 		name  string
@@ -125,7 +124,7 @@ func TestLimit(t *testing.T) {
 		},
 	}
 
-	kc, err := keeperclient.New(keeper_url, 60 * time.Second, keeper_login, keeper_password)
+	kc, err := keeperclient.New(keeper_url, 60*time.Second, keeper_login, keeper_password)
 	if err != nil {
 		panic(fmt.Sprintf("keeper: %v", err))
 	}
@@ -139,8 +138,8 @@ func TestLimit(t *testing.T) {
 		panic(fmt.Sprintf("keeper Set: %v", err))
 	}
 	cfg := ratelimit.CreateConfig()
-	cfg.KeeperRateLimitKey  = keeper_key
-	cfg.KeeperURL           = keeper_url
+	cfg.KeeperRateLimitKey = keeper_key
+	cfg.KeeperURL = keeper_url
 	cfg.KeeperAdminPassword = keeper_password
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 	for _, tc := range cases {
@@ -153,7 +152,7 @@ func TestLimit(t *testing.T) {
 				Comment:     "ratelimiter " + tc.name,
 			})
 			if err != nil {
-				panic(fmt.Sprintf("keeper Set %s: %v",tc.name, err))
+				panic(fmt.Sprintf("keeper Set %s: %v", tc.name, err))
 			}
 			rl, err := ratelimit.New(context.Background(), next, cfg, "ratelimit")
 			if err != nil {

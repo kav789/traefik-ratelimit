@@ -2,11 +2,11 @@ package traefik_ratelimit
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
 	"golang.org/x/time/rate"
 	"net/http"
 	"strings"
-	"fmt"
 )
 
 func (r *RateLimit) setFromSettings() error {
