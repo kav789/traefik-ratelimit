@@ -26,3 +26,16 @@ parameters:
   - keeperReqTimeout=300s
 
 ```
+keeper:
+
+```
+{
+  "limits": [
+    {"endpointpat": "/api/v2/methods",         "limit": 1},
+    {"endpointpat": "/api/v2/methods",         "limit": 2},
+    {"endpointpat": "/api/v2/**/methods",     "headerkey": "aa-bb", "headerval": "AsdfG", "limit": 1},
+    {"endpointpat": "/api/v2/*/aa/**/methods", "limit": 1}
+  ]
+}
+
+```

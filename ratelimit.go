@@ -74,9 +74,16 @@ type Settings interface {
 	Get(key string) (*keeper.Resp, error)
 }
 
+func mlog(args ...any) {
+	_, _ = os.Stdout.WriteString(fmt.Sprintf("[rate-limit-middleware-plugin] %s\n", fmt.Sprint(args...)))
+}
+
 // New created a new plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	mlog(fmt.Sprintf("config %v", config))
+	mlog(fmt.Sprintf("config %s %s %s", config.KeeperRateLimitKey, config.KeeperURL, config.KeeperReqTimeout ))
+
+
+
 	if len(config.KeeperRateLimitKey) == 0 {
 		return nil, fmt.Errorf("config: keeperRateLimitKey is empty")
 	}
@@ -99,7 +106,8 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		}
 	}
 
-	r := NewRateLimit(next, config, name)
+	r := newRateLimit(next, config, name)
+
 	err := r.setFromSettings()
 	if err != nil {
 		return nil, err
@@ -123,7 +131,12 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	return r, nil
 }
 
+
 func NewRateLimit(next http.Handler, config *Config, name string) *RateLimit {
+	return newRateLimit(next, config, name)
+}
+
+func newRateLimit(next http.Handler, config *Config, name string) *RateLimit {
 	r := &RateLimit{
 		name:     name,
 		next:     next,
@@ -147,7 +160,7 @@ func NewRateLimit(next http.Handler, config *Config, name string) *RateLimit {
 
 func (r *RateLimit) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	encoder := json.NewEncoder(rw)
-	if r.Allow(req) {
+	if r.allow(req) {
 		r.next.ServeHTTP(rw, req)
 		return
 	}
@@ -156,22 +169,3 @@ func (r *RateLimit) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	_ = encoder.Encode(map[string]any{"status_code": http.StatusTooManyRequests, "message": "rate limit exceeded, try again later"})
 }
 
-func (r *RateLimit) setFromSettings() error {
-	result, err := r.settings.Get(r.config.KeeperRateLimitKey)
-	if err != nil {
-		return err
-	}
-	if result != nil && !r.version.Equal(result) {
-		err = r.Update([]byte(result.Value))
-		if err != nil {
-			return err
-		}
-		r.version = result
-	}
-
-	return nil
-}
-
-func mlog(args ...any) {
-	_, _ = os.Stdout.WriteString(fmt.Sprintf("[rate-limit-middleware-plugin] %s\n", fmt.Sprint(args...)))
-}

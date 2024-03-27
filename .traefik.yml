@@ -12,6 +12,6 @@ summary: Rate Limit
 
 testData:
   keeperRateLimitKey: wbpay-ratelimits
-  keeperURL: http://keeper-ext.wbpay.svc.k8s.wbpay-dev:8080
+  keeperURL: http://keepedev:8080
   keeperAdminPassword: Pa$sw0rd
   keeperReqTimeout: 300s

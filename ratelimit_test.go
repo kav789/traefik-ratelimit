@@ -1,9 +1,13 @@
 package traefik_ratelimit_test
 
 import (
-	"encoding/json"
+	"fmt"
+	"os"
+	"context"
 	ratelimit "github.com/kav789/traefik-ratelimit"
+	"github.com/kav789/traefik-ratelimit/internal/keeperclient"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -14,12 +18,17 @@ type testdata struct {
 	res  bool
 }
 
-func Test_allow(t *testing.T) {
+func TestLimit(t *testing.T) {
+
+	keeper_login    := os.Getenv("KEEPER_LOGIN")
+	keeper_password := os.Getenv("KEEPER_PAS")
+	keeper_url      := os.Getenv("KEEPER_URL")
+	keeper_key      := "ratelimiter"
+
 
 	cases := []struct {
 		name  string
 		conf  string
-		res   bool
 		tests []testdata
 	}{
 		{
@@ -33,8 +42,6 @@ func Test_allow(t *testing.T) {
     {"endpointpat": "/api/v2/*/aa/**/methods", "limit": 1}
   ]
 }`,
-			//    {"endpointpat": "/api/v2/**/methods",      "limit": 1},
-			res: true,
 
 			tests: []testdata{
 				testdata{
@@ -53,6 +60,7 @@ func Test_allow(t *testing.T) {
 					},
 					res: false,
 				},
+
 				testdata{
 					uri: "https://aa.bb/api/v2/aaa/aaa/methods",
 					head: map[string]string{
@@ -88,7 +96,6 @@ func Test_allow(t *testing.T) {
 }
 `,
 
-			res: true,
 			tests: []testdata{
 				testdata{
 					uri: "https://aa.bb/task",
@@ -112,51 +119,66 @@ func Test_allow(t *testing.T) {
 				},
 				testdata{
 					uri: "https://aa.bb/api/v4/methods",
-
 					res: true,
 				},
 			},
 		},
 	}
 
-	cfg := &ratelimit.Config{}
-	var h http.Handler
-
-	rl := ratelimit.NewRateLimit(h, cfg, "test")
-	var err error
-
+	kc, err := keeperclient.New(keeper_url, 60 * time.Second, keeper_login, keeper_password)
+	if err != nil {
+		panic(fmt.Sprintf("keeper: %v", err))
+	}
+	err = kc.Set(keeperclient.KeeperData{
+		Key:         keeper_key,
+		Description: "ratelimiter",
+		Value:       "{}",
+		Comment:     "ratelimiter",
+	})
+	if err != nil {
+		panic(fmt.Sprintf("keeper Set: %v", err))
+	}
+	cfg := ratelimit.CreateConfig()
+	cfg.KeeperRateLimitKey  = keeper_key
+	cfg.KeeperURL           = keeper_url
+	cfg.KeeperAdminPassword = keeper_password
+	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			if len(tc.conf) > 0 {
-				err = rl.Update([]byte(tc.conf))
-				if tc.res && err != nil {
-					t.Errorf("setFromFile expect nil error but: %v", err)
-					return
-				}
-				if !tc.res && err == nil {
-					t.Errorf("setFromFile expect error but: nil")
-					return
-				}
-				if err == nil {
-					if err = compare([]byte(tc.conf), rl); err != nil {
-						t.Errorf("setFromFile : %v", err)
-					}
-				}
+			err = kc.Set(keeperclient.KeeperData{
+				Key:         keeper_key,
+				Description: "ratelimiter",
+				Value:       tc.conf,
+				Comment:     "ratelimiter " + tc.name,
+			})
+			if err != nil {
+				panic(fmt.Sprintf("keeper Set %s: %v",tc.name, err))
 			}
-
+			rl, err := ratelimit.New(context.Background(), next, cfg, "ratelimit")
+			if err != nil {
+				t.Fatal(err)
+			}
 			for _, d := range tc.tests {
 				req, err := prepreq(d)
 				if err != nil {
 					panic(err)
 				}
-
-				if !rl.Allow(req) {
-					t.Errorf("first %s %v expected true", d.uri, d.head)
+				rec := httptest.NewRecorder()
+				rl.ServeHTTP(rec, req)
+				if rec.Code != 200 {
+					t.Errorf("first %s %v expected 200 but get %d", d.uri, d.head, rec.Code)
 				}
-				r := rl.Allow(req)
-				if r != d.res {
-					t.Errorf("%s %v expected %v", d.uri, d.head, d.res)
+				rec = httptest.NewRecorder()
+				rl.ServeHTTP(rec, req)
+				if d.res {
+					if rec.Code != 200 {
+						t.Errorf("%s %v expected 200 but get %d", d.uri, d.head, rec.Code)
+					}
+				} else {
+					if rec.Code == 200 {
+						t.Errorf("%s %v expected NOT 200 but get 200", d.uri, d.head)
+					}
 				}
 				time.Sleep(1 * time.Second)
 			}
@@ -175,47 +197,4 @@ func prepreq(d testdata) (*http.Request, error) {
 		}
 	}
 	return req, nil
-}
-
-func compare(b []byte, r *ratelimit.RateLimit) error {
-
-	type conflimits struct {
-		Limits []ratelimit.Climit `json:"limits"`
-	}
-
-	var lim conflimits
-
-	if err := json.Unmarshal(b, &lim); err != nil {
-		return nil
-	}
-
-	/*		tl := r.limits.Load()
-
-			ep2i := make(map[string]int, len(tl.Limits))
-			for i, l := range tl.Limits {
-				ep2i[l.EndpointRe] = i
-			}
-
-			ep2 := make(map[string]struct{}, len(tl.Limits))
-
-			for _, l := range lim.Limits {
-				if _, ok := ep2[l.EndpointRe]; ok {
-					continue
-				}
-				ep2[l.EndpointRe] = struct{}{}
-
-				if i, ok := ep2i[l.EndpointRe]; !ok {
-					return fmt.Errorf("limit for %s", l.EndpointRe)
-				} else {
-					if tl.Limits[i].Limit != l.Limit {
-						return fmt.Errorf("limit for %s not equal %f %f", l.EndpointRe, l.Limit, tl.Limits[i].Limit)
-					}
-					ll := tl.Limits[i].limiter.Limit()
-					if ll != l.Limit {
-						return fmt.Errorf("limiter limit for %s not equal %f %f", l.EndpointRe, l.Limit, ll)
-					}
-				}
-			}
-	*/
-	return nil
 }

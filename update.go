@@ -6,9 +6,33 @@ import (
 	"golang.org/x/time/rate"
 	"net/http"
 	"strings"
+	"fmt"
 )
 
+func (r *RateLimit) setFromSettings() error {
+	result, err := r.settings.Get(r.config.KeeperRateLimitKey)
+	if err != nil {
+		return err
+	}
+	if result != nil && !r.version.Equal(result) {
+		err = r.update([]byte(result.Value))
+		mlog(fmt.Sprintf("from keeper update result: %v", err))
+		if err != nil {
+			return err
+		}
+		r.version = result
+	}
+
+	return nil
+}
+
+/*
 func (r *RateLimit) Update(b []byte) error {
+	return r.update(b)
+}
+*/
+
+func (r *RateLimit) update(b []byte) error {
 	type conflimits struct {
 		Limits []Climit `json:"limits"`
 	}
@@ -17,7 +41,7 @@ func (r *RateLimit) Update(b []byte) error {
 	if err := json.Unmarshal(b, &clim); err != nil {
 		return err
 	}
-
+	//	fmt.Println("update")
 	var k klimit
 	ep2 := make(map[klimit]struct{}, len(clim.Limits))
 	j := 0
@@ -72,7 +96,9 @@ func (r *RateLimit) Update(b []byte) error {
 				ch = true
 			}
 		}
+		//		fmt.Println("ch", ch)
 		if !ch {
+
 			return nil
 		}
 	}
