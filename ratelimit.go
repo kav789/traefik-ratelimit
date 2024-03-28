@@ -9,12 +9,20 @@ import (
 	"golang.org/x/time/rate"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
 
+const RETELIMIT_DIR = "./cfg"
+const RETELIMIT_NAME = "ratelimit.json"
+
+const VER = 1
+
 func CreateConfig() *Config {
-	return &Config{}
+	return &Config{
+		RatelimitPath: filepath.Join(RETELIMIT_DIR, RETELIMIT_NAME),
+	}
 }
 
 type Config struct {
@@ -22,22 +30,18 @@ type Config struct {
 	KeeperURL           string        `json:"keeperURL,omitempty"`
 	KeeperReqTimeout    string        `json:"keeperReqTimeout,omitempty"`
 	KeeperAdminPassword string        `json:"keeperAdminPassword,omitempty"`
+	RatelimitPath       string        `json:"ratelimitPath,omitempty"`
 	keeperReqTimeout    time.Duration `json:"-"`
 }
 
-type klimit struct {
+type rule struct {
 	EndpointPat string `json:"endpointpat"`
 	HeaderKey   string `json:"headerkey"`
 	HeaderVal   string `json:"headerval"`
 }
 
-type Climit struct {
-	klimit
-	Limit rate.Limit `json:"limit"`
-}
-
 type limit struct {
-	klimit
+	//	rule
 	Limit   rate.Limit
 	limiter *rate.Limiter
 }
@@ -54,7 +58,7 @@ type limits2 struct {
 
 type limits struct {
 	limits  map[string]*limits2
-	mlimits map[klimit]*limit
+	mlimits map[rule]*limit
 	pats    [][]pat.Pat
 }
 
@@ -64,8 +68,10 @@ type RateLimit struct {
 	config   *Config
 	version  *keeper.Resp
 	settings Settings
-	mtx      sync.RWMutex
-	limits   *limits
+
+	umtx   sync.RWMutex
+	mtx    sync.RWMutex
+	limits *limits
 	// limits   atomic.Pointer[limits]
 	// limits   unsafe.Pointer
 }
@@ -74,24 +80,24 @@ type Settings interface {
 	Get(key string) (*keeper.Resp, error)
 }
 
-func mlog(args ...any) {
-	_, _ = os.Stdout.WriteString(fmt.Sprintf("[rate-limit-middleware-plugin] %s\n", fmt.Sprint(args...)))
+func log(args ...any) {
+	_, _ = os.Stdout.WriteString(fmt.Sprintf("[ratelimit-middleware-plugin] %s\n", fmt.Sprint(args...)))
 }
 
 // New created a new plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	mlog(fmt.Sprintf("config %s %s %s", config.KeeperRateLimitKey, config.KeeperURL, config.KeeperReqTimeout))
+	log(fmt.Sprintf("config path: %q, key: %q, url: %q timeout: %q", config.RatelimitPath, config.KeeperRateLimitKey, config.KeeperURL, config.KeeperReqTimeout))
 
 	if len(config.KeeperRateLimitKey) == 0 {
-		return nil, fmt.Errorf("config: keeperRateLimitKey is empty")
+		log("config: config: keeperRateLimitKey is empty")
 	}
 
 	if len(config.KeeperURL) == 0 {
-		return nil, fmt.Errorf("config: keeperURL is empty")
+		log("config: keeperURL is empty")
 	}
 
 	if len(config.KeeperAdminPassword) == 0 {
-		return nil, fmt.Errorf("config: keeperAdminPassword is empty")
+		log("config: keeperAdminPassword is empty")
 	}
 
 	if len(config.KeeperReqTimeout) == 0 {
@@ -103,12 +109,14 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 			config.keeperReqTimeout = du
 		}
 	}
-
 	r := newRateLimit(next, config, name)
-
 	err := r.setFromSettings()
 	if err != nil {
-		return nil, err
+		kerr := err
+		err = r.setFromFile(config.RatelimitPath)
+		if err != nil {
+			return nil, fmt.Errorf("new: keeper: %v file: %v", kerr, err)
+		}
 	}
 
 	go func() {
@@ -120,7 +128,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 			case <-ticker.C:
 				err := r.setFromSettings()
 				if err != nil {
-					mlog("cant get ratelimits from keeper", err)
+					log("cant get ratelimits from keeper", err)
 				}
 			}
 		}
@@ -141,13 +149,13 @@ func newRateLimit(next http.Handler, config *Config, name string) *RateLimit {
 		settings: keeper.New(config.KeeperURL, config.keeperReqTimeout, config.KeeperAdminPassword),
 		limits: &limits{
 			limits:  make(map[string]*limits2),
-			mlimits: make(map[klimit]*limit),
+			mlimits: make(map[rule]*limit),
 			pats:    make([][]pat.Pat, 0),
 		},
 	}
 	//	lim := limits{
 	//		limits:  make(map[string]*limits2),
-	//		mlimits: make(map[klimit]*limit),
+	//		mlimits: make(map[rule]*limit),
 	//		pats:    make([][]pat.Pat, 0),
 	//	}
 	//	atomic.StorePointer(&r.limits, unsafe.Pointer(&lim))

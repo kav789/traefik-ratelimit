@@ -24,12 +24,6 @@ func allow(lim map[string]*limits2, p string, req *http.Request) (bool, bool) {
 	return false, false
 }
 
-/*
-func (r *RateLimit) Allow(req *http.Request) bool {
-	return r.allow(req)
-}
-*/
-
 func (r *RateLimit) allow(req *http.Request) bool {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()

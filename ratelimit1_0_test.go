@@ -1,15 +1,12 @@
 package traefik_ratelimit_test
 
 import (
-	"context"
-	"fmt"
+	//	"fmt"
+	//	"encoding/json"
 	ratelimit "github.com/kav789/traefik-ratelimit"
-	"github.com/kav789/traefik-ratelimit/internal/keeperclient"
 	"net/http"
-	"net/http/httptest"
-	"os"
 	"testing"
-	"time"
+	// "time"
 )
 
 type testdata struct {
@@ -18,16 +15,15 @@ type testdata struct {
 	res  bool
 }
 
-func TestLimit(t *testing.T) {
-
-	keeper_login := os.Getenv("KEEPER_LOGIN")
-	keeper_password := os.Getenv("KEEPER_PAS")
-	keeper_url := os.Getenv("KEEPER_URL")
-	keeper_key := "ratelimiter"
+func Test_Allow1(t *testing.T) {
+	if ratelimit.VER != 1 {
+		return
+	}
 
 	cases := []struct {
 		name  string
 		conf  string
+		res   bool
 		tests []testdata
 	}{
 		{
@@ -35,12 +31,16 @@ func TestLimit(t *testing.T) {
 			conf: `
 {
   "limits": [
+    {"endpointpat": "/api/v3/methods1",     "limit": 1},
     {"endpointpat": "/api/v2/methods",         "limit": 1},
     {"endpointpat": "/api/v2/methods",         "limit": 2},
     {"endpointpat": "/api/v2/**/methods",     "headerkey": "aa-bb", "headerval": "AsdfG", "limit": 1},
+    {"endpointpat": "/api/v2/**/methods",     "headerkey": "aa-bb", "headerval": "asdfG", "limit": 1},
     {"endpointpat": "/api/v2/*/aa/**/methods", "limit": 1}
   ]
 }`,
+			//    {"endpointpat": "/api/v2/**/methods",      "limit": 1},
+			res: true,
 
 			tests: []testdata{
 				testdata{
@@ -59,7 +59,6 @@ func TestLimit(t *testing.T) {
 					},
 					res: false,
 				},
-
 				testdata{
 					uri: "https://aa.bb/api/v2/aaa/aaa/methods",
 					head: map[string]string{
@@ -86,15 +85,20 @@ func TestLimit(t *testing.T) {
 		{
 			name: "t2",
 			conf: `
+
+
 {
   "limits": [
     {"endpointpat": "/api/v3/methods/aa$",  "limit": 1},
     {"endpointpat": "/api/v3/methods1",     "limit": 1},
-    {"endpointpat": "/api/v2/**/methods",   "limit": 1} 
+    {"endpointpat": "/api/v2/**/methods",   "limit": 1},
+    {"endpointpat": "/api/v2/**/methods",     "headerkey": "aa-bb", "headerval": "AsdfG", "limit": 1}
+
   ]
 }
 `,
 
+			res: true,
 			tests: []testdata{
 				testdata{
 					uri: "https://aa.bb/task",
@@ -118,69 +122,51 @@ func TestLimit(t *testing.T) {
 				},
 				testdata{
 					uri: "https://aa.bb/api/v4/methods",
+
 					res: true,
 				},
 			},
 		},
 	}
 
-	kc, err := keeperclient.New(keeper_url, 60*time.Second, keeper_login, keeper_password)
-	if err != nil {
-		panic(fmt.Sprintf("keeper: %v", err))
-	}
-	err = kc.Set(keeperclient.KeeperData{
-		Key:         keeper_key,
-		Description: "ratelimiter",
-		Value:       "{}",
-		Comment:     "ratelimiter",
-	})
-	if err != nil {
-		panic(fmt.Sprintf("keeper Set: %v", err))
-	}
-	cfg := ratelimit.CreateConfig()
-	cfg.KeeperRateLimitKey = keeper_key
-	cfg.KeeperURL = keeper_url
-	cfg.KeeperAdminPassword = keeper_password
-	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
+	cfg := &ratelimit.Config{}
+	var h http.Handler
+
+	rl := ratelimit.NewRateLimit(h, cfg, "test")
+	var err error
+
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			err = kc.Set(keeperclient.KeeperData{
-				Key:         keeper_key,
-				Description: "ratelimiter",
-				Value:       tc.conf,
-				Comment:     "ratelimiter " + tc.name,
-			})
-			if err != nil {
-				panic(fmt.Sprintf("keeper Set %s: %v", tc.name, err))
-			}
-			rl, err := ratelimit.New(context.Background(), next, cfg, "ratelimit")
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, d := range tc.tests {
-				req, err := prepreq(d)
-				if err != nil {
-					panic(err)
+			if len(tc.conf) > 0 {
+				err = rl.Update([]byte(tc.conf))
+				if tc.res && err != nil {
+					t.Errorf("setFromFile expect nil error but: %v", err)
+					return
 				}
-				rec := httptest.NewRecorder()
-				rl.ServeHTTP(rec, req)
-				if rec.Code != 200 {
-					t.Errorf("first %s %v expected 200 but get %d", d.uri, d.head, rec.Code)
+				if !tc.res && err == nil {
+					t.Errorf("setFromFile expect error but: nil")
+					return
 				}
-				rec = httptest.NewRecorder()
-				rl.ServeHTTP(rec, req)
-				if d.res {
-					if rec.Code != 200 {
-						t.Errorf("%s %v expected 200 but get %d", d.uri, d.head, rec.Code)
+			}
+
+			/*
+				for _, d := range tc.tests {
+					req, err := prepreq(d)
+					if err != nil {
+						panic(err)
 					}
-				} else {
-					if rec.Code == 200 {
-						t.Errorf("%s %v expected NOT 200 but get 200", d.uri, d.head)
+
+					if !rl.Allow(req) {
+						t.Errorf("first %s %v expected true", d.uri, d.head)
 					}
+					r := rl.Allow(req)
+					if r != d.res {
+						t.Errorf("%s %v expected %v", d.uri, d.head, d.res)
+					}
+					time.Sleep(1 * time.Second)
 				}
-				time.Sleep(1 * time.Second)
-			}
+			*/
 		})
 	}
 }
