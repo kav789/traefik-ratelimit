@@ -17,7 +17,7 @@ import (
 const RETELIMIT_DIR = "./cfg"
 const RETELIMIT_NAME = "ratelimit.json"
 
-const VER = 1
+const VER = 2
 
 func CreateConfig() *Config {
 	return &Config{
@@ -31,7 +31,6 @@ type Config struct {
 	KeeperReqTimeout    string        `json:"keeperReqTimeout,omitempty"`
 	KeeperAdminPassword string        `json:"keeperAdminPassword,omitempty"`
 	RatelimitPath       string        `json:"ratelimitPath,omitempty"`
-	keeperReqTimeout    time.Duration `json:"-"`
 }
 
 type rule struct {
@@ -65,7 +64,8 @@ type limits struct {
 type RateLimit struct {
 	name     string
 	next     http.Handler
-	config   *Config
+	config              *Config
+
 	version  *keeper.Resp
 	settings Settings
 
@@ -100,15 +100,6 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		log("config: keeperAdminPassword is empty")
 	}
 
-	if len(config.KeeperReqTimeout) == 0 {
-		config.keeperReqTimeout = 300 * time.Second
-	} else {
-		if du, err := time.ParseDuration(string(config.KeeperReqTimeout)); err != nil {
-			config.keeperReqTimeout = 300 * time.Second
-		} else {
-			config.keeperReqTimeout = du
-		}
-	}
 	r := newRateLimit(next, config, name)
 	err := r.setFromSettings()
 	if err != nil {
@@ -142,11 +133,16 @@ func NewRateLimit(next http.Handler, config *Config, name string) *RateLimit {
 }
 
 func newRateLimit(next http.Handler, config *Config, name string) *RateLimit {
+	to := 300 * time.Second
+	if du, err := time.ParseDuration(string(config.KeeperReqTimeout)); err == nil {
+		to = du
+	}
+
 	r := &RateLimit{
 		name:     name,
 		next:     next,
 		config:   config,
-		settings: keeper.New(config.KeeperURL, config.keeperReqTimeout, config.KeeperAdminPassword),
+		settings: keeper.New(config.KeeperURL, to, config.KeeperAdminPassword),
 		limits: &limits{
 			limits:  make(map[string]*limits2),
 			mlimits: make(map[rule]*limit),

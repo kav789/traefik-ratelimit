@@ -20,6 +20,21 @@ func Test_pat(t *testing.T) {
 		tests []testdata
 	}{
 		{
+			name: "t0",
+			p:    "$",
+			res:  true,
+			tests: []testdata{
+				testdata{uri: "",  res: true},
+				testdata{uri: "/", res: false},
+				testdata{uri: "/task", res: false},
+				testdata{uri: "/api/v2/aaa/aaa/methods/aa", res: false},
+				testdata{uri: "/api/v2/aaa/aaa/methods", res: false},
+				testdata{uri: "/api/v2/methods", res: false},
+				testdata{uri: "/test/api/v2/aaa/aaa/methods", res: false},
+			},
+		},
+
+		{
 			name: "t1",
 			p:    "/api/v2/**/methods",
 			res:  true,
@@ -32,7 +47,7 @@ func Test_pat(t *testing.T) {
 			},
 		},
 		{
-			name: "t1",
+			name: "t2",
 			p:    "/api/v2/*/methods",
 			res:  true,
 			tests: []testdata{
@@ -45,7 +60,7 @@ func Test_pat(t *testing.T) {
 		},
 
 		{
-			name: "t1",
+			name: "t3",
 			p:    "/**/methods/*",
 			res:  true,
 			tests: []testdata{
@@ -58,7 +73,7 @@ func Test_pat(t *testing.T) {
 		},
 
 		{
-			name: "t1",
+			name: "t4",
 			p:    "/*/*/*/*/methods",
 			res:  true,
 			tests: []testdata{
@@ -71,7 +86,7 @@ func Test_pat(t *testing.T) {
 		},
 
 		{
-			name: "t1",
+			name: "t5",
 			p:    "/*/*/*/*/methods$",
 			res:  true,
 			tests: []testdata{
@@ -95,7 +110,6 @@ func Test_pat(t *testing.T) {
 				t.Errorf("compilepat %s expect error but have result %q %v", tc.name, resp, resipt)
 				return
 			}
-
 			for _, d := range tc.tests {
 
 				ress, resb := pat.Preparepat(resipt, d.uri)
@@ -104,7 +118,6 @@ func Test_pat(t *testing.T) {
 				if d.res != res {
 					t.Errorf("compare %s %s expect %v: %v %q %q", tc.name, d.uri, d.res, resb, resp, ress)
 				}
-
 			}
 		})
 	}

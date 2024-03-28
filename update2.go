@@ -23,6 +23,7 @@ func (r *RateLimit) update2(b []byte) error {
 	if err := json.Unmarshal(b, &clim); err != nil {
 		return err
 	}
+//	fmt.Println(clim)
 
 	ep2 := make(map[rule]struct{}, len(clim.Limits))
 	i2lim := make([]*limit, len(clim.Limits))
@@ -75,7 +76,9 @@ func (r *RateLimit) update2(b []byte) error {
 			}
 			j2++
 		}
-		clim.Limits[i].Rules = rules[:j]
+		clim.Limits[i].Rules = rules[:j2]
+//		fmt.Println(clim.Limits[i].Rules)
+
 		if len(clim.Limits[i].Rules) == 0 {
 			continue
 		}

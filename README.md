@@ -27,7 +27,7 @@ parameters:
   - ratelimitPath=
 
 ```
-rate limit config keeper:
+rate limit config keeper v1:
 
 ```
 {
@@ -40,14 +40,21 @@ rate limit config keeper:
 }
 ```
 
+rate limit config keeper v2:
+
 
 ```
 {
   "limits": [
     {
       "rules": [
-        {"endpointpat": "/api/v2/methods"},
         {"endpointpat": "/api/v2/**/methods",      "headerkey": "aa-bb", "headerval": "AsdfG"},
+      ],
+      "limit": 1
+    }
+    {
+      "rules": [
+        {"endpointpat": "/api/v2/methods"},
         {"endpointpat": "/api/v2/*/aa/**/methods"}
       ],
       "limit": 1
