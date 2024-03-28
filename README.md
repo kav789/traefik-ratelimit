@@ -24,7 +24,7 @@ parameters:
   - keeperURL=http://keeper-ext.wbpay.svc.k8s.wbpay-dev:8080
   - keeperAdminPassword=Pa$sw0rd
   - keeperReqTimeout=300s
-  - ratelimitPath=
+  - ratelimitPath=cfg/ratelimit.json
 
 ```
 rate limit config keeper v1:
