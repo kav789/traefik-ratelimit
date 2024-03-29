@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"time"
-
 	"github.com/pkg/errors"
 )
 

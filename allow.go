@@ -2,6 +2,7 @@ package traefik_ratelimit
 
 import (
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
+//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/pat2"
 	"net/http"
 	"strings"
 )

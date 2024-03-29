@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/kav789/traefik-ratelimit/internal/keeper"
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
+//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/keeper"
+//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/pat2"
 	"golang.org/x/time/rate"
 	"net/http"
 	"os"

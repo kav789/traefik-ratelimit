@@ -3,6 +3,7 @@ package pat_test
 import (
 	//	"fmt"
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
+//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/pat2"
 	"testing"
 )
 

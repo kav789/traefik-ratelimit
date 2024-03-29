@@ -20,8 +20,8 @@ The source code of the plugin should be organized as follows:
 parameters:
 
 ```
-  - keeperRateLimitKey=wbpay-ratelimits
-  - keeperURL=http://keeper-ext.wbpay.svc.k8s.wbpay-dev:8080
+  - keeperRateLimitKey=ratelimits
+  - keeperURL=http://keeper:8080
   - keeperAdminPassword=Pa$sw0rd
   - keeperReqTimeout=300s
   - ratelimitPath=cfg/ratelimit.json
