@@ -2,13 +2,14 @@ package traefik_ratelimit
 
 import (
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
-//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/pat2"
+	//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/pat2"
 	"net/http"
 	"strings"
+	"sync/atomic"
 )
 
-func allow(lim map[string]*limits2, p string, req *http.Request) (bool, bool) {
-	if ls2, ok := lim[p]; ok {
+func (r *RateLimit) allow1(p string, req *http.Request) (bool, bool) {
+	if ls2, ok := grl.limits.limits[p]; ok {
 		for _, ls3 := range ls2.limits {
 			val := strings.ToLower(req.Header.Get(ls3.key))
 			if len(val) == 0 {
@@ -26,22 +27,20 @@ func allow(lim map[string]*limits2, p string, req *http.Request) (bool, bool) {
 }
 
 func (r *RateLimit) allow(req *http.Request) bool {
-	r.mtx.RLock()
-	defer r.mtx.RUnlock()
-
-	//	lim := (*limits)(atomic.LoadPointer(&r.limits))
-	lim := r.limits
-	//	fmt.Println("lim.ipat", lim.ipat)
-	for _, ipt := range lim.pats {
-		//		fmt.Println("ipat", ipt)
+	cnt := atomic.AddInt32(r.cnt, 1)
+	if cnt%1000 == 0 {
+		r.log("allow ", cnt)
+	}
+	grl.mtx.RLock()
+	defer grl.mtx.RUnlock()
+	for _, ipt := range grl.limits.pats {
 		if p, ok := pat.Preparepat(ipt, req.URL.Path); ok {
-			//			fmt.Println("p", p, ok)
-			if res, ok := allow(lim.limits, p, req); ok {
+			if res, ok := r.allow1(p, req); ok {
 				return res
 			}
 		}
 	}
-	if res, ok := allow(lim.limits, "", req); ok {
+	if res, ok := r.allow1("", req); ok {
 		return res
 	}
 	return true

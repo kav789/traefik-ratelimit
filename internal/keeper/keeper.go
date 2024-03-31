@@ -4,11 +4,15 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"time"
-	"github.com/pkg/errors"
 )
+
+type Settings interface {
+	Get(key string) (*Resp, error)
+}
 
 type Resp struct {
 	Value string `json:"value"`
@@ -53,18 +57,18 @@ func (k *Keeper) Get(key string) (*Resp, error) {
 
 	defer resp.Body.Close()
 	var res []byte
-	result := &Resp{}
+	result := Resp{}
 	res, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read response body")
 	}
 
-	err = json.Unmarshal(res, result)
+	err = json.Unmarshal(res, &result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal response body")
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 type Keeper struct {

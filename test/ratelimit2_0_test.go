@@ -1,19 +1,21 @@
 package traefik_ratelimit_test
 
 import (
-	//	"fmt"
-	//	"encoding/json"
 	ratelimit "github.com/kav789/traefik-ratelimit"
-//	ratelimit "gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit"
+	//	ratelimit "gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit"
 	"net/http"
 	"testing"
-	// "time"
 )
 
+type testdata struct {
+	uri   string
+	head  map[string]string
+	uri2  string
+	head2 map[string]string
+	res   bool
+}
+
 func Test_Allow2(t *testing.T) {
-	if ratelimit.VER != 2 {
-		return
-	}
 
 	cases := []struct {
 		name  string
@@ -21,6 +23,18 @@ func Test_Allow2(t *testing.T) {
 		res   bool
 		tests []testdata
 	}{
+		{
+			name: "t1",
+			conf: `
+{
+  "limits": [
+    {"rules":[{"endpointpat": "/$"}],       "limit": 1}
+  ]
+}`,
+			//    {"endpointpat": "/api/v2/**/methods",      "limit": 1},
+			res: true,
+		},
+
 		{
 			name: "t1",
 			conf: `
@@ -122,7 +136,9 @@ func Test_Allow2(t *testing.T) {
 		},
 	}
 
-	cfg := &ratelimit.Config{}
+	cfg := &ratelimit.Config{
+		RatelimitPath: "./cfg/ratelimit.json",
+	}
 	var h http.Handler
 
 	rl := ratelimit.NewRateLimit(h, cfg, "test")
@@ -142,7 +158,7 @@ func Test_Allow2(t *testing.T) {
 					return
 				}
 			}
-/*
+			/*
 
 				for _, d := range tc.tests {
 					req, err := prepreq(d.uri, d,head)
@@ -167,7 +183,21 @@ func Test_Allow2(t *testing.T) {
 					}
 					time.Sleep(1 * time.Second)
 				}
-*/
+			*/
 		})
+		break
 	}
+}
+
+func prepreq(uri string, head map[string]string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return nil, err
+	}
+	if head != nil {
+		for k, v := range head {
+			req.Header.Set(k, v)
+		}
+	}
+	return req, nil
 }

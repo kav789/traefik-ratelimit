@@ -2,7 +2,6 @@ package pat
 
 import (
 	"fmt"
-	//	"slices"
 	"strconv"
 	"strings"
 )

@@ -1,15 +1,8 @@
-# The name of your plugin as displayed in the Plugins Catalog web UI.
 displayName: Rate Limit
-
-# For now, `middleware` is the only type available.
 type: middleware
-
-# The import path of your plugin.
 import: github.com/kav789/traefik-ratelimit
-
-# A brief description of what your plugin is doing.
+#import: gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit
 summary: Rate Limit
-
 testData:
   keeperRateLimitKey: wbpay-ratelimits
   keeperURL: http://keepedev:8080
