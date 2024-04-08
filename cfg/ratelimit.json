@@ -1,5 +1,0 @@
-{
-  "limits": [
-    {"rules":[{"endpointpat": "/$"}],       "limit": 10000}
-  ]
-}

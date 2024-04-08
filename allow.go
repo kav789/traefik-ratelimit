@@ -2,7 +2,6 @@ package traefik_ratelimit
 
 import (
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
-	//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/pat2"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -24,6 +23,10 @@ func (r *RateLimit) allow1(p string, req *http.Request) (bool, bool) {
 		}
 	}
 	return false, false
+}
+
+func (r *RateLimit) Allow(req *http.Request) bool {
+	return r.allow(req)
 }
 
 func (r *RateLimit) allow(req *http.Request) bool {

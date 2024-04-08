@@ -2,24 +2,23 @@ package traefik_ratelimit_test
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	ratelimit "github.com/kav789/traefik-ratelimit"
-	"github.com/kav789/traefik-ratelimit/internal/keeperclient"
-	//	ratelimit "gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit"
-	//	"gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit/internal/keeperclient"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 )
 
-func Test_Limit2(t *testing.T) {
+type testdata struct {
+	uri   string
+	head  map[string]string
+	uri2  string
+	head2 map[string]string
+	res   bool
+}
 
-	keeper_login := os.Getenv("KEEPER_LOGIN")
-	keeper_password := os.Getenv("KEEPER_PAS")
-	keeper_url := os.Getenv("KEEPER_URL")
-	keeper_key := "ratelimiter"
+func Test_Limit2(t *testing.T) {
 
 	cases := []struct {
 		name  string
@@ -31,18 +30,36 @@ func Test_Limit2(t *testing.T) {
 			conf: `
 {
   "limits": [
-    {"rules":[{"endpointpat": "/api/v2/methods"}],         "limit": 1},
-    {"rules":[{"endpointpat": "/api/v2/methods"}],         "limit": 2},
+    {"rules":[{"urlpathpattern": "/api/v2/methods",  "headerkey": "", "headerval": ""}],         "limit": 1},
+    {"rules":[{"urlpathpattern": "/api/v2/methods",  "headerkey": "", "headerval": ""}],         "limit": 2},
     {"rules":[
-              {"endpointpat": "/api/v2/**/methods",     "headerkey": "aa-bb", "headerval": "AsdfG"},
-              {"endpointpat": "/api/v3/**/methods",     "headerkey": "aa-bb", "headerval": "Asdfm"}
+              {"urlpathpattern": "/api/v2/**/methods",     "headerkey": "aa-bb", "headerval": "AsdfG"},
+              {"urlpathpattern": "/api/v3/**/methods",     "headerkey": "aa-bb", "headerval": "Asdfm"}
              ], "limit": 1},
-    {"rules":[{"endpointpat": "/api/v2/**/methods",     "headerkey": "aa-Bb", "headerval": "AsdfG"}], "limit": 1},
-    {"rules":[{"endpointpat": "/api/v2/*/aa/**/methods"}], "limit": 1}
+    {"rules":[{"urlpathpattern": "/api/v2/**/methods",     "headerkey": "aa-Bb", "headerval": "AsdfG"}], "limit": 1},
+    {"rules":[{"urlpathpattern": "/api/v2/*/aa/**/methods",  "headerkey": "", "headerval": ""}], "limit": 1},
+
+    {"rules":[{"urlpathpattern": "",                       "headerkey": "cc-bb", "headerval": "AsdfGh"}], "limit": 1}
+
   ]
 }`,
 
 			tests: []testdata{
+				testdata{
+					uri: "https://aa.bb/api",
+					head: map[string]string{
+						"cc-bb": "asdfgh",
+					},
+					res: false,
+				},
+				testdata{
+					uri: "https://aa.bb/api/v2",
+					head: map[string]string{
+						"cc-bb": "asdfgh",
+					},
+					res: false,
+				},
+
 				testdata{
 					uri: "https://aa.bb/task",
 					res: true,
@@ -104,9 +121,9 @@ func Test_Limit2(t *testing.T) {
 			conf: `
 {
   "limits": [
-    {"rules":[{"endpointpat": "/api/v3/methods/aa$"}],  "limit": 1},
-    {"rules":[{"endpointpat": "/api/v3/methods1"}],     "limit": 1},
-    {"rules":[{"endpointpat": "/api/v2/**/methods"}],   "limit": 1} 
+    {"rules":[{"urlpathpattern": "/api/v3/methods/aa$",  "headerkey": "", "headerval": ""}],  "limit": 1},
+    {"rules":[{"urlpathpattern": "/api/v3/methods1",  "headerkey": "", "headerval": ""}],     "limit": 1},
+    {"rules":[{"urlpathpattern": "/api/v2/**/methods",  "headerkey": "", "headerval": ""}],   "limit": 1} 
   ]
 }
 `,
@@ -141,44 +158,30 @@ func Test_Limit2(t *testing.T) {
 	}
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 	cfg := ratelimit.CreateConfig()
-	cfg.RatelimitPath = "./cfg/ratelimit.json"
+	cfg.RatelimitData = `
+{
+  "limits": [
+    {"rules":[{"urlpathpattern": "/$","headerkey": "", "headerval": ""}], "limit": 10000}
+  ]
+}
+
+
+`
 
 	_, err := ratelimit.New(context.Background(), next, cfg, "ratelimit")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cfg.KeeperRateLimitKey = keeper_key
-	cfg.KeeperURL = keeper_url
-	cfg.KeeperAdminPassword = keeper_password
-
-	kc, err := keeperclient.New(keeper_url, 60*time.Second, keeper_login, keeper_password)
-	if err != nil {
-		panic(fmt.Sprintf("keeper Set: %v", err))
-	}
-
-	err = kc.Set(keeperclient.KeeperData{
-		Key:         keeper_key,
-		Description: "ratelimiter",
-		Value:       "{}",
-		Comment:     "ratelimiter",
-	})
-	if err != nil {
-		panic(fmt.Sprintf("keeper Set: %v", err))
-	}
-
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			err = kc.Set(keeperclient.KeeperData{
-				Key:         keeper_key,
-				Description: "ratelimiter",
-				Value:       tc.conf,
-				Comment:     "ratelimiter " + tc.name,
-			})
-			if err != nil {
-				panic(fmt.Sprintf("keeper Set %s: %v", tc.name, err))
+			var tst interface{}
+
+			if err := json.Unmarshal([]byte(tc.conf), &tst); err != nil {
+				t.Fatal("init json:", err)
 			}
+			cfg.RatelimitData = tc.conf
 			rl, err := ratelimit.New(context.Background(), next, cfg, "ratelimit")
 			if err != nil {
 				t.Fatal(err)
@@ -214,4 +217,17 @@ func Test_Limit2(t *testing.T) {
 			}
 		})
 	}
+}
+
+func prepreq(uri string, head map[string]string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return nil, err
+	}
+	if head != nil {
+		for k, v := range head {
+			req.Header.Set(k, v)
+		}
+	}
+	return req, nil
 }

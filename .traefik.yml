@@ -1,10 +1,7 @@
 displayName: Rate Limit
 type: middleware
 import: github.com/kav789/traefik-ratelimit
-#import: gitlab-private.wildberries.ru/wbpay-go/traefik-ratelimit
 summary: Rate Limit
 testData:
-  keeperRateLimitKey: wbpay-ratelimits
-  keeperURL: http://keepedev:8080
-  keeperAdminPassword: Pa$sw0rd
-  keeperReqTimeout: 300s
+  ratelimitData: |
+    { limits:[ ] }

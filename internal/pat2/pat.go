@@ -1,7 +1,7 @@
 package pat
 
 import (
-	"fmt"
+	//	"fmt"
 	"strconv"
 	"strings"
 )
@@ -88,12 +88,19 @@ func Compilepat(s string) (string, []Pat, error) {
 	r := make([]string, 0, len(ss))
 	ri := make([]Pat, 0, len(ss))
 	f, fl, ril := int8(0), false, int8(0)
+ssloop:
 	for i, s := range ss {
 		switch s {
 		case "**":
-			if fl || eo {
-				return "", nil, fmt.Errorf("bad pattern")
+			if fl {
+				continue ssloop
 			}
+			if eo {
+				eo = false
+			}
+			//			if fl || eo {
+			//				return "", nil, fmt.Errorf("bad pattern")
+			//			}
 			fl = true
 			f = int8(i) + 1
 		case "*":
