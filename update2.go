@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
-	"golang.org/x/time/rate"
+	"github.com/kav789/traefik-ratelimit/internal/rate"
+	//	"golang.org/x/time/rate"
 	"net/http"
 	"strings"
 )
 
 func (g *GlobalRateLimit) update(b []byte) error {
 	type climit struct {
-		Rules []rule     `json:"rules"`
-		Limit rate.Limit `json:"limit"`
+		Rules []rule `json:"rules"`
+		Limit int    `json:"limit"`
 	}
 
 	type conflimits struct {
@@ -121,7 +122,7 @@ limloop2:
 		if lim == nil {
 			lim = &limit{
 				Limit:   l.Limit,
-				limiter: rate.NewLimiter(l.Limit, 1),
+				limiter: rate.NewLimiter(l.Limit),
 			}
 		}
 		for _, rl := range l.Rules {

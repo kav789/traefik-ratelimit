@@ -17,11 +17,11 @@ func (g *GlobalRateLimit) logWorkingLimits() {
 	limits := g.limits.limits
 	for p, lim := range limits {
 		if lim.limit != nil {
-			locallog(fmt.Sprintf("working limit rule %d,%d: %q \"\" \"\" %p %p %f %f", g.version.Version, g.version.ModRevision, p, lim.limit, lim.limit.limiter, lim.limit.Limit, lim.limit.limiter.Limit()))
+			locallog(fmt.Sprintf("working limit rule %d,%d: %q \"\" \"\" %p %p %d %d", g.version.Version, g.version.ModRevision, p, lim.limit, lim.limit.limiter, lim.limit.Limit, lim.limit.limiter.Limit()))
 		}
 		for _, lim2 := range lim.limits {
 			for val, lim3 := range lim2.limits {
-				locallog(fmt.Sprintf("working limit rule %d,%d: %q %q %q %p %p %f %f", g.version.Version, g.version.ModRevision, p, lim2.key, val, lim3, lim3.limiter, lim3.Limit, lim3.limiter.Limit()))
+				locallog(fmt.Sprintf("working limit rule %d,%d: %q %q %q %p %p %d %d", g.version.Version, g.version.ModRevision, p, lim2.key, val, lim3, lim3.limiter, lim3.Limit, lim3.limiter.Limit()))
 			}
 		}
 	}

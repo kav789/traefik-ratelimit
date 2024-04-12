@@ -31,7 +31,7 @@ func Test_Limit2(t *testing.T) {
 {
   "limits": [
     {"rules":[{"urlpathpattern": "/api/v2/methods",  "headerkey": "", "headerval": ""}],         "limit": 1},
-    {"rules":[{"urlpathpattern": "/api/v2/methods",  "headerkey": "", "headerval": ""}],         "limit": 2},
+    {"rules":[{"urlpathpattern": "/api/v2/methods",  "headerkey": "", "headerval": ""}],         "limit": 1},
     {"rules":[
               {"urlpathpattern": "/api/v2/**/methods",     "headerkey": "aa-bb", "headerval": "AsdfG"},
               {"urlpathpattern": "/api/v3/**/methods",     "headerkey": "aa-bb", "headerval": "Asdfm"}

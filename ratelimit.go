@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"github.com/kav789/traefik-ratelimit/internal/keeper"
 	"github.com/kav789/traefik-ratelimit/internal/pat2"
-	"golang.org/x/time/rate"
+	"github.com/kav789/traefik-ratelimit/internal/rate"
+	//	"golang.org/x/time/rate"
 	"log"
 	"net/http"
 	"os"
@@ -41,7 +42,7 @@ type rule struct {
 }
 
 type limit struct {
-	Limit   rate.Limit
+	Limit   int
 	limiter *rate.Limiter
 }
 
