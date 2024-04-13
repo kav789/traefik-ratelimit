@@ -32,6 +32,7 @@ func (g *GlobalRateLimit) update(b []byte) error {
 	ep2 := make(map[rule]struct{}, len(clim.Limits))
 	i2lim := make([]*limit, len(clim.Limits))
 	lim2cnt := make(map[*limit]int, len(clim.Limits))
+	useful := make(map[*limit]struct{}, len(clim.Limits))
 
 	oldlim := g.limits
 
@@ -49,7 +50,6 @@ func (g *GlobalRateLimit) update(b []byte) error {
 		if clim.Limits[i].Limit <= 0 {
 			return fmt.Errorf("limits.%d: limit <= 0", i)
 		}
-
 		j2, f := 0, true
 		var l *limit
 		for i2 := 0; i2 < len(rules); i2++ {
@@ -99,12 +99,19 @@ func (g *GlobalRateLimit) update(b []byte) error {
 				l.Limit = clim.Limits[j].Limit
 			}
 			i2lim[j] = l
+			useful[l] = struct{}{}
 			fcnt++
 		}
 		j++
 	}
 	clim.Limits = clim.Limits[:j]
 	locallog(fmt.Sprintf("use %d limits", len(clim.Limits)))
+
+	for _, l := range oldlim.mlimits {
+		if _, ok := useful[l]; !ok {
+			l.limiter.Close()
+		}
+	}
 
 	if len(clim.Limits) == fcnt && fcnt == len(lim2cnt) {
 		return nil
