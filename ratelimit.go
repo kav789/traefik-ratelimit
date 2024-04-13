@@ -184,14 +184,18 @@ func (g *GlobalRateLimit) configure(ctx context.Context, config *Config) {
 	g.config = config
 	err := grl.setFromSettings()
 	if err != nil {
-		kerr := err
+		if ctx == nil {
+			locallog(fmt.Sprintf("init0: keeper: %v. try init from middleware RatelimitData configuration", err))
+		} else {
+			locallog(fmt.Sprintf("init: keeper: %v. try init from middleware RatelimitData configuration", err))
+		}
 		err = grl.setFromData()
 		//		err = grl.setFromFile()
 		if err != nil {
 			if ctx == nil {
-				locallog(fmt.Sprintf("init0: keeper: %v data: %v", kerr, err))
+				locallog(fmt.Sprintf("init0: data: %v", err))
 			} else {
-				locallog(fmt.Sprintf("init: keeper: %v data: %v", kerr, err))
+				locallog(fmt.Sprintf("init: data: %v", err))
 			}
 		}
 	}
