@@ -1,7 +1,6 @@
 package rate
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 )
