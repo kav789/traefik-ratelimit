@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync/atomic"
 )
 
 func (g *GlobalRateLimit) logWorkingLimits() {
@@ -14,7 +15,7 @@ func (g *GlobalRateLimit) logWorkingLimits() {
 	} else {
 		locallog(fmt.Sprintf("working limits: %s", buf.String()))
 	}
-	limits := g.limits.limits
+	limits := g.limits[int(atomic.LoadInt32(grl.curlimit))].limits
 	for p, lim := range limits {
 		if lim.limit != nil {
 			locallog(fmt.Sprintf("working limit rule %d,%d: %q \"\" \"\" %p %p %d %d", g.version.Version, g.version.ModRevision, p, lim.limit, lim.limit.limiter, lim.limit.Limit, lim.limit.limiter.Limit()))

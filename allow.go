@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 )
 
-func (r *RateLimit) allow1(p string, req *http.Request) (bool, bool) {
-	if ls2, ok := grl.limits.limits[p]; ok {
+func (r *RateLimit) allow1(grllimits *limits, p string, req *http.Request) (bool, bool) {
+	if ls2, ok := grllimits.limits[p]; ok {
 		for _, ls3 := range ls2.limits {
 			val := strings.ToLower(req.Header.Get(ls3.key))
 			if len(val) == 0 {
@@ -34,16 +34,16 @@ func (r *RateLimit) allow(req *http.Request) bool {
 	if cnt%1000 == 0 {
 		r.log("allow ", cnt)
 	}
-	grl.mtx.RLock()
-	defer grl.mtx.RUnlock()
-	for _, ipt := range grl.limits.pats {
+	grllimits := grl.limits[int(atomic.LoadInt32(grl.curlimit))]
+
+	for _, ipt := range grllimits.pats {
 		if p, ok := pat.Preparepat(ipt, req.URL.Path); ok {
-			if res, ok := r.allow1(p, req); ok {
+			if res, ok := r.allow1(grllimits, p, req); ok {
 				return res
 			}
 		}
 	}
-	if res, ok := r.allow1("", req); ok {
+	if res, ok := r.allow1(grllimits, "", req); ok {
 		return res
 	}
 	return true

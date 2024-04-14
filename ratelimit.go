@@ -74,8 +74,8 @@ type GlobalRateLimit struct {
 	version   *keeper.Resp
 	settings  keeper.Settings
 	umtx      sync.Mutex
-	mtx       sync.RWMutex
-	limits    *limits
+	curlimit  *int32
+	limits    []*limits
 	rawlimits []byte
 	ticker    *time.Ticker
 	tickerto  time.Duration
@@ -84,17 +84,22 @@ type GlobalRateLimit struct {
 
 var grl *GlobalRateLimit
 
+const LIMITS = 5
+
 func init() {
 	grl = &GlobalRateLimit{
-		limits: &limits{
-			limits:  make(map[string]*limits2),
-			mlimits: make(map[rule]*limit),
-			pats:    make([][]pat.Pat, 0),
-		},
+		curlimit:  new(int32),
+		limits:    make([]*limits, LIMITS),
 		version:   &keeper.Resp{},
 		rawlimits: []byte(""),
 		icnt:      new(int32),
 	}
+	grl.limits[0] = &limits{
+		limits:  make(map[string]*limits2),
+		mlimits: make(map[rule]*limit),
+		pats:    make([][]pat.Pat, 0),
+	}
+
 	config := CreateConfig()
 	to := 30 * time.Second
 	if du, err := time.ParseDuration(string(config.KeeperReloadInterval)); err == nil {

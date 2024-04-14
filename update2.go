@@ -8,6 +8,7 @@ import (
 	//	"golang.org/x/time/rate"
 	"net/http"
 	"strings"
+	"sync/atomic"
 )
 
 func (g *GlobalRateLimit) update(b []byte) error {
@@ -34,7 +35,8 @@ func (g *GlobalRateLimit) update(b []byte) error {
 	lim2cnt := make(map[*limit]int, len(clim.Limits))
 	useful := make(map[*limit]struct{}, len(clim.Limits))
 
-	oldlim := g.limits
+	curlimit := int(atomic.LoadInt32(g.curlimit))
+	oldlim := g.limits[curlimit]
 
 	for _, l := range oldlim.mlimits {
 		lim2cnt[l] = lim2cnt[l] + 1
@@ -182,8 +184,8 @@ limloop2:
 		}
 
 	}
-	g.mtx.Lock()
-	defer g.mtx.Unlock()
-	g.limits = newlim
+	curlimit = (curlimit + 1) % LIMITS
+	g.limits[curlimit] = newlim
+	atomic.StoreInt32(g.curlimit, int32(curlimit))
 	return nil
 }
