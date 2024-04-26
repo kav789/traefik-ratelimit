@@ -10,12 +10,10 @@ import (
 func (r *RateLimit) allow1(grllimits *limits, p string, req *http.Request) (bool, bool) {
 	if ls2, ok := grllimits.limits[p]; ok {
 		for _, ls3 := range ls2.limits {
-			val := strings.ToLower(req.Header.Get(ls3.key))
-			if len(val) == 0 {
-				continue
-			}
-			if l, ok := ls3.limits[val]; ok {
-				return l.limiter.Allow(), true
+			for _, val := range req.Header.Values(ls3.key) {
+				if l, ok := ls3.limits[strings.ToLower(val)]; ok {
+					return l.limiter.Allow(), true
+				}
 			}
 		}
 		if ls2.limit != nil {
