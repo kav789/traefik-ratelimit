@@ -155,6 +155,48 @@ func Test_Limit2(t *testing.T) {
 				},
 			},
 		},
+
+
+
+
+		{
+			name: "t3",
+			conf: `
+{
+  "limits": [
+
+    {
+      "rules":[
+          { "urlpathpattern": "/*/*/*/aa$" }
+      ],
+      "limit": 1
+    }
+
+  ]
+}
+`,
+
+			tests: []testdata{
+				testdata{
+					uri: "https://aa.bb////aa",
+					res: false,
+				},
+			},
+		},
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	}
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 	cfg := ratelimit.CreateConfig()
@@ -179,7 +221,7 @@ func Test_Limit2(t *testing.T) {
 			var tst interface{}
 
 			if err := json.Unmarshal([]byte(tc.conf), &tst); err != nil {
-				t.Fatal("init json:", err)
+				t.Fatal("init json:", tc.conf, err)
 			}
 			cfg.RatelimitData = tc.conf
 			rl, err := ratelimit.New(context.Background(), next, cfg, "ratelimit")

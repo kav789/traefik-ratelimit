@@ -18,6 +18,18 @@ func Test_pat(t *testing.T) {
 		res   bool
 		tests []testdata
 	}{
+
+		{
+			name: "t-0",
+			p:    "/aaa/*/bbb",
+			res:  true,
+			tests: []testdata{
+				testdata{uri: "", res: false},
+				testdata{uri: "/aaa//bbb", res: true},
+				testdata{uri: "/aaa/api/bbb", res: true},
+			},
+		},
+
 		{
 			name: "t-1",
 			p:    "/$",
@@ -109,6 +121,7 @@ func Test_pat(t *testing.T) {
 				testdata{uri: "/api/v2/aaa/methods", res: false},
 				testdata{uri: "/api/v2/methods", res: false},
 				testdata{uri: "/api/v2/aaa/aaa/methods", res: true},
+				testdata{uri: "////aaa/methods", res: true},
 			},
 		},
 	}
